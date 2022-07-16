@@ -1,10 +1,15 @@
 package com.github.ksouthwood.hypermetro;
 
 import org.junit.jupiter.api.Test;
-import java.util.List;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.List;
+import java.util.stream.Stream;
+
 import static com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOut;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class HyperMetroTests {
@@ -50,5 +55,30 @@ class HyperMetroTests {
                      Charles Center - Shot Tower/Market Place - Johns Hopkins Hospital
                      Shot Tower/Market Place - Johns Hopkins Hospital - depot
                      """, result);
+    }
+
+    @ParameterizedTest
+    @MethodSource("commandParseTestStrings")
+    public void testParseString(final String command, final List<String> expectedResult) {
+        assertEquals(expectedResult, new CommandParser().parseString(command));
+    }
+
+    private static Stream<Arguments> commandParseTestStrings() {
+        return Stream.of(Arguments.of("""
+                                      /exit
+                                      """,
+                                      List.of("/exit")),
+                         Arguments.of("""
+                                      /output Hammersmith-and-City
+                                      """,
+                                      List.of("/output", "Hammersmith-and-City")),
+                         Arguments.of("""
+                                      /add Hammersmith-and-City "Test station"
+                                      """,
+                                      List.of("/add", "Hammersmith-and-City", "Test station")),
+                         Arguments.of("""
+                                      /remove "Jake's Line" 'My "Jumping" Place'
+                                      """,
+                                      List.of("/remove", "Jake's Line", "My \"Jumping\" Place")));
     }
 }
