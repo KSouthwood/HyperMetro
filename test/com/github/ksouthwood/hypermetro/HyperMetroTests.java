@@ -5,6 +5,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -60,7 +62,8 @@ class HyperMetroTests {
     @ParameterizedTest
     @MethodSource("commandParseTestStrings")
     public void testParseString(final String command, final List<String> expectedResult) {
-        assertEquals(expectedResult, new CommandParser().parseString(command));
+        var commandParser = new CommandParser(new BufferedReader(new StringReader(command)));
+        assertEquals(expectedResult, commandParser.getCommand());
     }
 
     private static Stream<Arguments> commandParseTestStrings() {
@@ -73,12 +76,19 @@ class HyperMetroTests {
                                       """,
                                       List.of("/output", "Hammersmith-and-City")),
                          Arguments.of("""
-                                      /add Hammersmith-and-City "Test station"
+                                      /add-head Hammersmith-and-City "Test station"
                                       """,
-                                      List.of("/add", "Hammersmith-and-City", "Test station")),
+                                      List.of("/add-head", "Hammersmith-and-City", "Test station")),
                          Arguments.of("""
                                       /remove "Jake's Line" 'My "Jumping" Place'
                                       """,
-                                      List.of("/remove", "Jake's Line", "My \"Jumping\" Place")));
+                                      List.of("/remove", "Jake's Line", "My \"Jumping\" Place")),
+                         Arguments.of("""
+                                      /add Baltimore "Maryland"
+                                      
+                                      output
+                                      /append Baltimore Maryland
+                                      """,
+                                      List.of("/append", "Baltimore", "Maryland")));
     }
 }
