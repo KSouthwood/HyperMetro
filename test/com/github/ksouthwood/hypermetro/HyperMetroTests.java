@@ -8,13 +8,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOut;
+import static com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOutNormalized;
 import static org.junit.jupiter.api.Assertions.*;
 
 
 class HyperMetroTests {
     @Test
-    public void testEmptyFile() {
+    public void testReadEmptyFile() {
         var result = new FileOperations().readFile("test/test_files/empty.txt");
         assertTrue(result.isEmpty());
     }
@@ -30,15 +30,15 @@ class HyperMetroTests {
     }
 
     @Test
-    public void testInvalidFile() {
-        var result = new FileOperations().readFile("test/test_files/invalid.txt");
-        assertNull(result);
+    public void testInvalidFile() throws Exception {
+        var output = tapSystemOutNormalized(() -> assertNull(new FileOperations()
+                                                                     .readFile("test/test_files/invalid.txt")));
+        assertEquals("Error! Such a file doesn't exist!\n", output);
     }
 
     @Test
     public void testOutputBaltimore() throws Exception {
-        var stations = new FileOperations().readFile("test/test_files/baltimore.txt");
-        var result = tapSystemOut(() -> Main.printStations(stations));
+        var result   = tapSystemOutNormalized(() -> Main.readFile("test/test_files/baltimore.txt"));
         assertEquals("""
                      depot - Owings Mills - Old Court
                      Owings Mills - Old Court - Milford Mill

@@ -1,3 +1,4 @@
+
 # [HyperMetro](https://hyperskill.org/projects/120)
 
 ## About
@@ -19,7 +20,7 @@ Imagine you work for the metro system and your task is to develop a program
 that displays all the stations of the current line. At this point, let's 
 assume that the metro has only one line.
 
-You have a simple text file with the information about hte names of the 
+You have a simple text file with the information about the names of the 
 stations. The path to the file is specified by the command line argument. 
 your program should read the file, generate a singly-linked list of the 
 stations, and print them like this:
