@@ -24,6 +24,7 @@ class HyperMetroTests {
     @Test
     public void testBaltimoreFile() {
         var result = new FileOperations().readFile("test/test_files/baltimore.txt");
+        //noinspection SpellCheckingInspection
         assertEquals(result,
                      List.of("Owings Mills", "Old Court", "Milford Mill", "Reiserstown Plaza", "Rogers Avenue",
                              "West Cold Spring", "Mondawmin", "Penn North", "Uptown", "State Center",
@@ -38,31 +39,12 @@ class HyperMetroTests {
         assertEquals("Error! Such a file doesn't exist!\n", output);
     }
 
-    @Test
-    public void testOutputBaltimore() throws Exception {
-        var result   = tapSystemOutNormalized(() -> Main.readFile("test/test_files/baltimore.txt"));
-        assertEquals("""
-                     depot - Owings Mills - Old Court
-                     Owings Mills - Old Court - Milford Mill
-                     Old Court - Milford Mill - Reiserstown Plaza
-                     Milford Mill - Reiserstown Plaza - Rogers Avenue
-                     Reiserstown Plaza - Rogers Avenue - West Cold Spring
-                     Rogers Avenue - West Cold Spring - Mondawmin
-                     West Cold Spring - Mondawmin - Penn North
-                     Mondawmin - Penn North - Uptown
-                     Penn North - Uptown - State Center
-                     Uptown - State Center - Lexington Market
-                     State Center - Lexington Market - Charles Center
-                     Lexington Market - Charles Center - Shot Tower/Market Place
-                     Charles Center - Shot Tower/Market Place - Johns Hopkins Hospital
-                     Shot Tower/Market Place - Johns Hopkins Hospital - depot
-                     """, result);
-    }
 
     @ParameterizedTest
     @MethodSource("commandParseTestStrings")
     public void testParseString(final String command, final List<String> expectedResult) {
-        var commandParser = new CommandParser(new BufferedReader(new StringReader(command)));
+        var lines = new FileOperations().readJSONFile("test/test_files/json_test.json");
+        var commandParser = new CommandParser(lines, new BufferedReader(new StringReader(command)));
         assertEquals(expectedResult, commandParser.getCommand());
     }
 
@@ -90,5 +72,50 @@ class HyperMetroTests {
                                       /append Baltimore Maryland
                                       """,
                                       List.of("/append", "Baltimore", "Maryland")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("stage2Example")
+    public void testStage2Example(final String commands, final String expected) {
+        var reader = new BufferedReader(new StringReader(commands));
+        String result;
+        try {
+            var lines = new FileOperations().readJSONFile("test/test_files/stage_2_example.json");
+            var parser = new CommandParser(lines, reader);
+            result = tapSystemOutNormalized(parser::start);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> stage2Example() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /output Hammersmith-and-City
+                                      /exit
+                                      """,
+                                      """
+                                      depot - Hammersmith - Westbourne-park
+                                      Hammersmith - Westbourne-park - depot
+                                      """),
+                         Arguments.of("""
+                                      /append Hammersmith-and-City "Test station"
+                                      /output Hammersmith-and-City
+                                      /exit
+                                      """,
+                                      """
+                                      depot - Hammersmith - Westbourne-park
+                                      Hammersmith - Westbourne-park - Test station
+                                      Westbourne-park - Test station - depot
+                                      """),
+                         Arguments.of("""
+                                      /remove Hammersmith-and-City Hammersmith
+                                      /output Hammersmith-and-City
+                                      /exit
+                                      """,
+                                      """
+                                      depot - Westbourne-park - depot
+                                      """));
     }
 }

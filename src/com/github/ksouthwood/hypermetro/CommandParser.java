@@ -3,17 +3,59 @@ package com.github.ksouthwood.hypermetro;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class CommandParser {
     private final BufferedReader reader;
+    private final HashMap<String, MetroLine> metroLines;
 
     private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit");
 
-    public CommandParser(BufferedReader reader) {
+    public CommandParser(HashMap<String, MetroLine> lines, BufferedReader reader) {
+        this.metroLines = lines;
         this.reader = reader;
     }
 
+    void start() {
+        boolean processCommands = true;
+
+        while (processCommands) {
+            var command = getCommand();
+            switch (command.get(0)) {
+                case "/exit" -> processCommands = false;
+                case "/output" -> {
+                    if (command.size() == 2) {
+                        metroLines.get(command.get(1)).printStations();
+                    }
+                }
+                case "/append" -> {
+                    if (command.size() == 3) {
+                        metroLines.get(command.get(1)).append(command.get(2));
+                    }
+                }
+                case "/add-head" -> {
+                    if (command.size() == 3) {
+                        metroLines.get(command.get(1)).addHead(command.get(2));
+                    }
+                }
+                case "/remove" -> {
+                    if (command.size() == 3) {
+                        metroLines.get(command.get(1)).remove(command.get(2));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Read a line and parse it into command tokens.
+     * <p>
+     * Reads a line from the reader, then has it parsed into tokens. Will only
+     * return a valid command.
+     *
+     * @return Valid command as a list of strings.
+     */
     List<String> getCommand() {
         List<String> command = new ArrayList<>(List.of(""));
 
@@ -31,7 +73,17 @@ public class CommandParser {
         return command;
     }
 
-    private List<String> parseString(final String commandLine) {
+    /**
+     * Parse a string into parts.
+     * <p>
+     * Parse the supplied string into parts splitting it at spaces while keeping
+     * anything inside single/double quotes together.
+     *
+     * @param commandLine String to be parsed.
+     *
+     * @return List of parts from the parsed string.
+     */
+    List<String> parseString(final String commandLine) {
         StringBuilder segment      = new StringBuilder();
         List<String>  parts        = new ArrayList<>();
         boolean       doubleQuotes = false;
