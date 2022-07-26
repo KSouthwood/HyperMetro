@@ -25,12 +25,14 @@ public class MetroLine {
             listToPrint.addFirst(new Station("depot"));
             listToPrint.addLast(new Station("depot"));
 
-            for (int index = 0; index < listToPrint.size() - 2; index++) {
-                System.out.printf("%s - %s - %s%n",
-                                  listToPrint.get(index).getName(),
-                                  listToPrint.get(index + 1).getName(),
-                                  listToPrint.get(index + 2).getName());
-            }
+//            for (int index = 0; index < listToPrint.size() - 2; index++) {
+//                System.out.printf("%s - %s - %s%n",
+//                                  listToPrint.get(index).getName(),
+//                                  listToPrint.get(index + 1).getName(),
+//                                  listToPrint.get(index + 2).getName());
+//            }
+            listToPrint.forEach(station ->
+                    System.out.printf("%s%n", station.getName()));
         }
     }
 

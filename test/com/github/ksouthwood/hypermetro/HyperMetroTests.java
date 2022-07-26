@@ -1,5 +1,6 @@
 package com.github.ksouthwood.hypermetro;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -71,7 +72,13 @@ class HyperMetroTests {
                                       output
                                       /append Baltimore Maryland
                                       """,
-                                      List.of("/append", "Baltimore", "Maryland")));
+                                      List.of("/append", "Baltimore", "Maryland")),
+                         Arguments.of("""
+                                      /connect "New York" 'North Houston' Baltimore 'Richard "Dick" Plaza'
+                                      """,
+                                      List.of("/connect", "New York", "North Houston", "Baltimore", "Richard \"Dick\"" +
+                                                                                                    " Plaza"))
+        );
     }
 
     @ParameterizedTest
@@ -89,6 +96,7 @@ class HyperMetroTests {
         assertEquals(expected, result);
     }
 
+    // Updated during Stage 3 to reflect change in output requirements
     private static Stream<Arguments> stage2Example() {
         //noinspection SpellCheckingInspection
         return Stream.of(Arguments.of("""
@@ -96,8 +104,10 @@ class HyperMetroTests {
                                       /exit
                                       """,
                                       """
-                                      depot - Hammersmith - Westbourne-park
-                                      Hammersmith - Westbourne-park - depot
+                                      depot
+                                      Hammersmith
+                                      Westbourne-park
+                                      depot
                                       """),
                          Arguments.of("""
                                       /append Hammersmith-and-City "Test station"
@@ -105,9 +115,11 @@ class HyperMetroTests {
                                       /exit
                                       """,
                                       """
-                                      depot - Hammersmith - Westbourne-park
-                                      Hammersmith - Westbourne-park - Test station
-                                      Westbourne-park - Test station - depot
+                                      depot
+                                      Hammersmith
+                                      Westbourne-park
+                                      Test station
+                                      depot
                                       """),
                          Arguments.of("""
                                       /remove Hammersmith-and-City Hammersmith
@@ -115,7 +127,53 @@ class HyperMetroTests {
                                       /exit
                                       """,
                                       """
-                                      depot - Westbourne-park - depot
+                                      depot
+                                      Westbourne-park
+                                      depot
+                                      """));
+    }
+
+    @Disabled("Disabled until JSON parser has been updated in CommandParser")
+    @ParameterizedTest
+    @MethodSource("stage3Example")
+    public void testStage3Example(final String commands, final String expected) {
+        var reader = new BufferedReader((new StringReader(commands)));
+        String result;
+        try {
+            var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
+            var parser = new CommandParser(lines, reader);
+            result = tapSystemOutNormalized(parser::start);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> stage3Example() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /output Hammersmith-and-City
+                                      /connect Hammersmith-and-City Hammersmith Metro-Railway "Edgver road"
+                                      /output Hammersmith-and-City
+                                      /output Metro-Railway
+                                      /exit
+                                      """,
+                                      """
+                                      depot
+                                      Hammersmith
+                                      Westbourne-park
+                                      Baker-street - Baker-street (Metro-Railway line)
+                                      depot
+                                      depot
+                                      Hammersmith - Edgver road (Metro-Railway line)
+                                      Westbourne-park
+                                      Baker-street - Baker-street (Metro-Railway line)
+                                      depot
+                                      depot
+                                      Bishops-road
+                                      Edgver road - Hammersmith (Hammersmith-and-City)
+                                      Baker-street - Baker-street (Hammersmith-and-City)
+                                      depot
                                       """));
     }
 }

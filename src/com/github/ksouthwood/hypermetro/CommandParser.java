@@ -10,7 +10,8 @@ public class CommandParser {
     private final BufferedReader reader;
     private final HashMap<String, MetroLine> metroLines;
 
-    private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit");
+    private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit",
+                                                       "/connect");
 
     public CommandParser(HashMap<String, MetroLine> lines, BufferedReader reader) {
         this.metroLines = lines;
