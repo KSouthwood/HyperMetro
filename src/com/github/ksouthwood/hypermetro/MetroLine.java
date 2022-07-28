@@ -1,13 +1,14 @@
 package com.github.ksouthwood.hypermetro;
 
-import java.util.LinkedList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class MetroLine {
     String lineName;
 
-    LinkedList<Station> stations;
+    LinkedHashMap<String, Station> stations;
 
-    MetroLine(final String name, final LinkedList<Station> stations) {
+    MetroLine(final String name, final LinkedHashMap<String, Station> stations) {
         this.lineName = name;
         this.stations = stations;
     }
@@ -15,45 +16,52 @@ public class MetroLine {
     /**
      * Output the stations of the line
      * <p>
-     * Print the stations of the line in order, with depot's at the beginning
-     * and end. Each line has three stops separated by a hyphen.
-     *
+     * Print the stations of the line in order, with depot's at the beginning and end. Each line lists the station name
+     * followed by which line you can transfer to if applicable.
      */
     void printStations() {
         if (stations != null) {
-            var listToPrint = new LinkedList<>(stations);
-            listToPrint.addFirst(new Station("depot"));
-            listToPrint.addLast(new Station("depot"));
+            var listToPrint = new LinkedHashMap<String, Station>();
+            listToPrint.put("depotStart", new Station("depot"));
+            listToPrint.putAll(stations);
+            listToPrint.put("depotEnd", new Station("depot"));
 
-            for (int index = 0; index < listToPrint.size() - 2; index++) {
-                System.out.printf("%s - %s - %s%n",
-                                  listToPrint.get(index).getName(),
-                                  listToPrint.get(index + 1).getName(),
-                                  listToPrint.get(index + 2).getName());
-            }
+            listToPrint.forEach((name, station) -> {
+                                    System.out.print(station.getName());
+                                    if (station.hasTransfer()) {
+                                        var transfer = station.getTransfer();
+                                        for (Map.Entry<String, String> entry : transfer) {
+                                            System.out.printf(" - %s (%s)", entry.getValue(), entry.getKey());
+                                        }
+                                    }
+                                    System.out.println();
+                                }
+            );
         }
     }
 
     void addHead(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            stations.addFirst(new Station(stationName));
+            LinkedHashMap<String, Station> newMap = new LinkedHashMap<>();
+            newMap.put(stationName, new Station(stationName));
+            newMap.putAll(stations);
+            stations = newMap;
         }
     }
 
     void append(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            stations.addLast(new Station(stationName));
+            stations.put(stationName, new Station(stationName));
         }
     }
 
     void remove(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            var station = stations.stream()
-                                  .filter(x -> x.getName().equals(stationName))
-                                  .toList();
-            if (!station.isEmpty()) {
-                stations.remove(station.get(0));
-            }
+            stations.remove(stationName);
         }
+    }
+
+    void connect(final String station, final String transferLine, final String transferStation) {
+        stations.get(station).setTransfer(transferLine, transferStation);
     }
 }

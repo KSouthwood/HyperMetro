@@ -7,10 +7,11 @@ import java.util.HashMap;
 import java.util.List;
 
 public class CommandParser {
-    private final BufferedReader reader;
+    private final BufferedReader             reader;
     private final HashMap<String, MetroLine> metroLines;
 
-    private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit");
+    private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit",
+                                                       "/connect");
 
     public CommandParser(HashMap<String, MetroLine> lines, BufferedReader reader) {
         this.metroLines = lines;
@@ -44,6 +45,14 @@ public class CommandParser {
                         metroLines.get(command.get(1)).remove(command.get(2));
                     }
                 }
+                case "/connect" -> {
+                    if (command.size() == 5) {
+                        metroLines.get(command.get(1))
+                                  .connect(command.get(2), command.get(3), command.get(4));
+                        metroLines.get(command.get(3))
+                                  .connect(command.get(4), command.get(1), command.get(2));
+                    }
+                }
             }
         }
     }
@@ -51,8 +60,7 @@ public class CommandParser {
     /**
      * Read a line and parse it into command tokens.
      * <p>
-     * Reads a line from the reader, then has it parsed into tokens. Will only
-     * return a valid command.
+     * Reads a line from the reader, then has it parsed into tokens. Will only return a valid command.
      *
      * @return Valid command as a list of strings.
      */
@@ -76,10 +84,11 @@ public class CommandParser {
     /**
      * Parse a string into parts.
      * <p>
-     * Parse the supplied string into parts splitting it at spaces while keeping
-     * anything inside single/double quotes together.
+     * Parse the supplied string into parts splitting it at spaces while keeping anything inside single/double quotes
+     * together.
      *
-     * @param commandLine String to be parsed.
+     * @param commandLine
+     *         String to be parsed.
      *
      * @return List of parts from the parsed string.
      */
