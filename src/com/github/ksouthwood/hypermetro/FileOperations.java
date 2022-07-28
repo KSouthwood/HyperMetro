@@ -47,11 +47,12 @@ public class FileOperations {
     /**
      * Read a JSON file.
      * <p>
-     * Attempts to read the specified JSON file and return the contents in a
-     * map with each line found in a MetroLine object. Outputs an error and
-     * returns null if the file doesn't exist.
+     * Attempts to read the specified JSON file and return the contents in a map with each line found in a MetroLine
+     * object. Outputs an error and returns null if the file doesn't exist.
      *
-     * @param filename String for the filename to read.
+     * @param filename
+     *         String for the filename to read.
+     *
      * @return Map of line name and corresponding MetroLine object.
      */
     HashMap<String, MetroLine> readJSONFile(String filename) {
@@ -69,29 +70,59 @@ public class FileOperations {
 
     /**
      * Parse a JSON file and create necessary objects.
+     * <p>
+     * Parse the JSON file creating MetroLine and Station objects as needed in the specified order.
      *
-     * Parse the JSON file creating MetroLine and Station objects as needed in
-     * the specified order.
-     *
-     * @param file Object to read JSON from.
+     * @param file
+     *         Object to read JSON from.
      *
      * @return Map of MetroLine objects with their name as keys.
      */
     private HashMap<String, MetroLine> parseJSONFile(final BufferedReader file) {
+        // map to hold each metro line keyed by line name
         HashMap<String, MetroLine> metroLines = new HashMap<>();
-        JsonElement fileElement = JsonParser.parseReader(file);
-        JsonObject fileObject = fileElement.getAsJsonObject();
-        for (var entry : fileObject.entrySet()) {
-            var lineName = entry.getKey();
-            TreeMap<Integer, String> stations = new TreeMap<>();
+
+        JsonObject fileObject = JsonParser.parseReader(file).getAsJsonObject();
+
+        // iterate over each metro line in the file
+        for (var metroLine : fileObject.entrySet()) {
+            var lineName = metroLine.getKey();
+
+            // map to hold the stations, sorts by ascending key value
+            TreeMap<Integer, Station> stationTreeMap = new TreeMap<>();
+
+            // iterate through each station, reading its specifications (name, transfer status, etc.)
             for (var stationEntry : fileObject.getAsJsonObject(lineName).entrySet()) {
-                stations.put(Integer.parseInt(stationEntry.getKey()), stationEntry.getValue().getAsString());
+                int        stationNumber  = Integer.parseInt(stationEntry.getKey());
+                JsonObject stationDetails = stationEntry.getValue().getAsJsonObject();
+                String     stationName    = stationDetails.get("name").getAsString();
+                Station    station        = new Station(stationName);
+                JsonObject transferObject = getTransferStation(stationDetails.get("transfer"));
+                if (!(transferObject == null)) {
+                    station.setTransfer(transferObject.get("line").getAsString(),
+                                        transferObject.get("station").getAsString());
+                }
+                stationTreeMap.put(stationNumber, station);
             }
-            var linkedStations = new LinkedList<Station>();
-            stations.forEach((key, val) -> linkedStations.addLast(new Station(val)));
-            metroLines.put(lineName, new MetroLine(lineName, linkedStations));
+            var stationLinkedHashMap = new LinkedHashMap<String, Station>();
+            stationTreeMap.forEach((key, val) -> stationLinkedHashMap.put(val.getName(), val));
+            metroLines.put(lineName, new MetroLine(lineName, stationLinkedHashMap));
         }
         return metroLines;
     }
 
+    private JsonObject getTransferStation(final JsonElement transferElement) {
+        if (transferElement.isJsonNull()) {
+            return null;
+        }
+
+        if (transferElement.isJsonArray()) {
+            if (transferElement.getAsJsonArray().isEmpty()) {
+                return null;
+            }
+            return transferElement.getAsJsonArray().get(0).getAsJsonObject();
+        }
+
+        return transferElement.getAsJsonObject();
+    }
 }

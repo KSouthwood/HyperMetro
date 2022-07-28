@@ -44,7 +44,7 @@ class HyperMetroTests {
     @ParameterizedTest
     @MethodSource("commandParseTestStrings")
     public void testParseString(final String command, final List<String> expectedResult) {
-        var lines = new FileOperations().readJSONFile("test/test_files/json_test.json");
+        var lines = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
         var commandParser = new CommandParser(lines, new BufferedReader(new StringReader(command)));
         assertEquals(expectedResult, commandParser.getCommand());
     }
@@ -81,6 +81,7 @@ class HyperMetroTests {
         );
     }
 
+    @Disabled("Not testing Stage 2 anymore.")
     @ParameterizedTest
     @MethodSource("stage2Example")
     public void testStage2Example(final String commands, final String expected) {
@@ -133,7 +134,7 @@ class HyperMetroTests {
                                       """));
     }
 
-    @Disabled("Disabled until JSON parser has been updated in CommandParser")
+//    @Disabled("Disabled until JSON parser has been updated in FileOperations")
     @ParameterizedTest
     @MethodSource("stage3Example")
     public void testStage3Example(final String commands, final String expected) {
@@ -162,17 +163,17 @@ class HyperMetroTests {
                                       depot
                                       Hammersmith
                                       Westbourne-park
-                                      Baker-street - Baker-street (Metro-Railway line)
+                                      Baker street - Baker street (Metro-Railway)
                                       depot
                                       depot
-                                      Hammersmith - Edgver road (Metro-Railway line)
+                                      Hammersmith - Edgver road (Metro-Railway)
                                       Westbourne-park
-                                      Baker-street - Baker-street (Metro-Railway line)
+                                      Baker street - Baker street (Metro-Railway)
                                       depot
                                       depot
                                       Bishops-road
                                       Edgver road - Hammersmith (Hammersmith-and-City)
-                                      Baker-street - Baker-street (Hammersmith-and-City)
+                                      Baker street - Baker street (Hammersmith-and-City)
                                       depot
                                       """));
     }
