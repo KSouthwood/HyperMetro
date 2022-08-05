@@ -1,16 +1,19 @@
 package com.github.ksouthwood.hypermetro;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 public class MetroLine {
     String lineName;
 
     LinkedHashMap<String, Station> stations;
+    LinkedList<Station> stationLinkedList = new LinkedList<>();
 
     MetroLine(final String name, final LinkedHashMap<String, Station> stations) {
         this.lineName = name;
         this.stations = stations;
+        stations.forEach((k, v) -> this.stationLinkedList.add(v));
     }
 
     /**
@@ -42,22 +45,28 @@ public class MetroLine {
 
     void addHead(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
+            Station newStation = new Station(stationName);
             LinkedHashMap<String, Station> newMap = new LinkedHashMap<>();
-            newMap.put(stationName, new Station(stationName));
+            newMap.put(stationName, newStation);
             newMap.putAll(stations);
             stations = newMap;
+            stationLinkedList.addFirst(newStation);
         }
     }
 
     void append(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            stations.put(stationName, new Station(stationName));
+            Station newStation = new Station(stationName);
+            stations.put(stationName, newStation);
+            stationLinkedList.addLast(newStation);
         }
     }
 
     void remove(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
+            Station toRemove = stations.get(stationName);
             stations.remove(stationName);
+            stationLinkedList.remove(toRemove);
         }
     }
 
