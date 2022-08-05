@@ -73,4 +73,8 @@ public class MetroLine {
     void connect(final String station, final String transferLine, final String transferStation) {
         stations.get(station).setTransfer(transferLine, transferStation);
     }
+
+    void getRoute(final String startStation, final String endLine, final String endStation) {
+
+    }
 }

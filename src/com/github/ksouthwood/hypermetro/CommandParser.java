@@ -11,7 +11,7 @@ public class CommandParser {
     private final HashMap<String, MetroLine> metroLines;
 
     private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit",
-                                                       "/connect");
+                                                       "/connect", "/route");
 
     public CommandParser(HashMap<String, MetroLine> lines, BufferedReader reader) {
         this.metroLines = lines;
@@ -25,11 +25,16 @@ public class CommandParser {
             var command = getCommand();
             switch (command.get(0)) {
                 case "/exit" -> processCommands = false;
+
+                // command(1) is line name to output
                 case "/output" -> {
                     if (command.size() == 2) {
                         metroLines.get(command.get(1)).printStations();
                     }
                 }
+                // for /append, /add-head and /remove,
+                // command(1) is line name to append station to
+                // command(2) is the station name to append
                 case "/append" -> {
                     if (command.size() == 3) {
                         metroLines.get(command.get(1)).append(command.get(2));
@@ -45,12 +50,24 @@ public class CommandParser {
                         metroLines.get(command.get(1)).remove(command.get(2));
                     }
                 }
+
+                // command(1) and command(3) are the line names to connect,
+                // command(2) and command(4) are the station names
                 case "/connect" -> {
                     if (command.size() == 5) {
                         metroLines.get(command.get(1))
                                   .connect(command.get(2), command.get(3), command.get(4));
                         metroLines.get(command.get(3))
                                   .connect(command.get(4), command.get(1), command.get(2));
+                    }
+                }
+
+                // command(1) and command(2) are the starting line and station name (respectively) of the route
+                // to find to command(3) and command(4), the ending line and station name (respectively)
+                case "/route" -> {
+                    if (command.size() == 5) {
+                        metroLines.get(command.get(1))
+                                  .getRoute(command.get(2), command.get(3), command.get(4));
                     }
                 }
             }
