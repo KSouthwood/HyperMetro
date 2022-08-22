@@ -177,4 +177,34 @@ class HyperMetroTests {
                                       depot
                                       """));
     }
+
+    @ParameterizedTest
+    @MethodSource("stage4Example")
+    public void testStage4Example(final String commands, final String expected) {
+        var reader = new BufferedReader((new StringReader(commands)));
+        String result;
+        try {
+            var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
+            var parser = new CommandParser(lines, reader);
+            result = tapSystemOutNormalized(parser::start);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> stage4Example() {
+        return Stream.of(Arguments.of("""
+                                      /route Metro-Railway "Edgver road" Hammersmith-and-City Westbourne-park
+                                      /exit
+                                      """,
+                                      """
+                                      Edgver road
+                                      Baker street
+                                      Transition to line Hammersmith-and-City
+                                      Baker street
+                                      Westbourne-park
+                                      """
+                                      ));
+    }
 }

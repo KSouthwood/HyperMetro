@@ -1,16 +1,25 @@
 package com.github.ksouthwood.hypermetro;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class MetroLine {
-    String lineName;
+    private final String  lineName;
 
-    LinkedHashMap<String, Station> stations;
+    private Station head;
+    private Station tail;
 
-    MetroLine(final String name, final LinkedHashMap<String, Station> stations) {
-        this.lineName = name;
-        this.stations = stations;
+    LinkedHashMap<String, Station> stations = new LinkedHashMap<>();
+
+    MetroLine(final String lineName, final Station firstStation, final Station lastStation) {
+        this.lineName = lineName;
+        this.head = firstStation;
+        this.tail = lastStation;
+
+        var current = head;
+        while (current != null) {
+            stations.put(current.getName(), current);
+            current = current.getNext();
+        }
     }
 
     /**
@@ -20,48 +29,57 @@ public class MetroLine {
      * followed by which line you can transfer to if applicable.
      */
     void printStations() {
-        if (stations != null) {
-            var listToPrint = new LinkedHashMap<String, Station>();
-            listToPrint.put("depotStart", new Station("depot"));
-            listToPrint.putAll(stations);
-            listToPrint.put("depotEnd", new Station("depot"));
-
-            listToPrint.forEach((name, station) -> {
-                                    System.out.print(station.getName());
-                                    if (station.hasTransfer()) {
-                                        var transfer = station.getTransfer();
-                                        for (Map.Entry<String, String> entry : transfer) {
-                                            System.out.printf(" - %s (%s)", entry.getValue(), entry.getKey());
-                                        }
-                                    }
-                                    System.out.println();
-                                }
-            );
+        if (head == null) { // if head is null, there are no stations on the line
+            return;
         }
+
+        Station current = head;
+        System.out.println("depot");
+        while (current != null) {
+            System.out.print(current.getName());
+            if (current.hasTransfers()) {
+                var transfer = current.getTransfers();
+                for (var entry : transfer) {
+                    System.out.printf(" - %s (%s)", entry.getName(), entry.getLine());
+                }
+            }
+            System.out.println();
+            current = current.getNext();
+        }
+        System.out.println("depot");
     }
 
     void addHead(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            LinkedHashMap<String, Station> newMap = new LinkedHashMap<>();
-            newMap.put(stationName, new Station(stationName));
-            newMap.putAll(stations);
-            stations = newMap;
+            Station newStation = new Station(stationName, lineName);
+            newStation.setNext(head);
+            head.setPrev(newStation);
+            head = newStation;
+            stations.put(stationName, newStation);
         }
     }
 
     void append(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            stations.put(stationName, new Station(stationName));
+            Station newStation = new Station(stationName, lineName);
+            newStation.setPrev(tail);
+            tail.setNext(newStation);
+            tail = newStation;
+            stations.put(stationName, newStation);
         }
     }
 
     void remove(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
+            Station toRemove = stations.get(stationName);
+            toRemove.getPrev().setNext(toRemove.getNext());
+            toRemove.getNext().setPrev(toRemove.getPrev());
             stations.remove(stationName);
         }
     }
 
-    void connect(final String station, final String transferLine, final String transferStation) {
-        stations.get(station).setTransfer(transferLine, transferStation);
+    Station getStation(final String station) {
+        return stations.get(station);
     }
+
 }
