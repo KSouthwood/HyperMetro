@@ -80,7 +80,8 @@ public class FileOperations {
      */
     private HashMap<String, MetroLine> parseJSONFile(final BufferedReader file) {
         // map to hold each metro line keyed by line name
-        HashMap<String, MetroLine> metroLines = new HashMap<>();
+        HashMap<String, MetroLine>         metroLines = new HashMap<>();
+        HashMap<String, ArrayList<String>> transfers  = new HashMap<>();
 
         JsonObject fileObject = JsonParser.parseReader(file).getAsJsonObject();
 
@@ -93,21 +94,46 @@ public class FileOperations {
 
             // iterate through each station, reading its specifications (name, transfer status, etc.)
             for (var stationEntry : fileObject.getAsJsonObject(lineName).entrySet()) {
+                // get details for the station
                 int        stationNumber  = Integer.parseInt(stationEntry.getKey());
                 JsonObject stationDetails = stationEntry.getValue().getAsJsonObject();
                 String     stationName    = stationDetails.get("name").getAsString();
-                Station    station        = new Station(stationName);
                 JsonObject transferObject = getTransferStation(stationDetails.get("transfer"));
+
+                // create station and add details
+                Station station = new Station(stationName, lineName);
                 if (!(transferObject == null)) {
-                    station.setTransfer(transferObject.get("line").getAsString(),
-                                        transferObject.get("station").getAsString());
+                    transfers.put(stationName, new ArrayList<>(List.of(lineName,
+                                                                       transferObject.get("line").getAsString())));
                 }
                 stationTreeMap.put(stationNumber, station);
             }
-            var stationLinkedHashMap = new LinkedHashMap<String, Station>();
-            stationTreeMap.forEach((key, val) -> stationLinkedHashMap.put(val.getName(), val));
-            metroLines.put(lineName, new MetroLine(lineName, stationLinkedHashMap));
+
+            // update the stations with their previous and next stops
+            stationTreeMap.forEach((key, val) -> {
+                var prevStation = stationTreeMap.get(key - 1);
+                var nextStation = stationTreeMap.get(key + 1);
+                val.setPrev(prevStation);
+                val.setNext(nextStation);
+            });
+
+            // get the first and last stations and create the line
+            var head = stationTreeMap.firstEntry().getValue();
+            var tail = stationTreeMap.lastEntry().getValue();
+            metroLines.put(lineName, new MetroLine(lineName, head, tail));
         }
+
+        // add any transfer points between the lines. Needs to be done after the lines
+        // are created so we have all the station objects created.
+        for (var transferStation : transfers.keySet()) {
+            String lineA = transfers.get(transferStation).get(0);
+            String lineB = transfers.get(transferStation).get(1);
+            Station statA = metroLines.get(lineA).getStation(transferStation);
+            Station statB = metroLines.get(lineB).getStation(transferStation);
+            statA.setTransfers(statB);
+            statB.setTransfers(statA);
+        }
+
         return metroLines;
     }
 

@@ -1,32 +1,64 @@
 package com.github.ksouthwood.hypermetro;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Station {
-    private final String              name;
+    private final String name;
+    private final String line;
 
-    private final Map<String, String> transfer;
+    private Station prev;
+    private Station next;
 
-    Station(String name) {
+    private final List<Station> transfers = new LinkedList<>();
+
+    Station(final String name, final String line) {
         this.name = name;
-        this.transfer = new HashMap<>();
+        this.line = line;
+        this.next = null;
+        this.prev = null;
     }
 
     String getName() {
         return name;
     }
 
-    void setTransfer(final String line, final String station) {
-        transfer.put(line, station);
+    void setTransfers(final Station station) {
+        transfers.add(station);
     }
 
-    boolean hasTransfer() {
-        return !transfer.isEmpty();
+    boolean hasTransfers() {
+        return !transfers.isEmpty();
     }
 
-    Set<Map.Entry<String, String>> getTransfer() {
-        return transfer.entrySet();
+    List<Station> getTransfers() {
+        return transfers;
+    }
+
+    void setPrev(final Station previous) {
+        this.prev = previous;
+    }
+
+    Station getPrev() {
+        return prev;
+    }
+
+    void setNext(final Station next) {
+        this.next = next;
+    }
+
+    Station getNext() {
+        return next;
+    }
+
+    LinkedList<Station> getNeighbors() {
+        LinkedList<Station> neighbors = new LinkedList<>(transfers);
+        neighbors.add(prev);
+        neighbors.add(next);
+        neighbors.removeIf(Objects::isNull);
+        return neighbors;
+    }
+
+    String getLine() {
+        return line;
     }
 }
