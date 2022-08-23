@@ -25,25 +25,46 @@ public class Controller {
                 // command(1) is line name to output
                 case "/output" -> {
                     if (command.size() == 2) {
-                        metroLines.get(command.get(1)).printStations();
+                        var lineName = command.get(1);
+                        if (isValidLineName(lineName)) {
+                            metroLines.get(lineName).printStations();
+                        }
+                    } else {
+                        System.out.println("Invalid format! Command should be: /output [line]");
                     }
                 }
+
                 // for /append, /add-head and /remove,
                 // command(1) is line name to append station to
-                // command(2) is the station name to append
+                // command(2) is the station name to append/add/remove
                 case "/append" -> {
                     if (command.size() == 3) {
-                        metroLines.get(command.get(1)).append(command.get(2));
+                        var lineName = command.get(1);
+                        if (isValidLineName(lineName)) {
+                            metroLines.get(lineName).append(command.get(2));
+                        }
+                    } else {
+                        System.out.println("Invalid format! Command should be: /append [line] [station]");
                     }
                 }
                 case "/add-head" -> {
                     if (command.size() == 3) {
-                        metroLines.get(command.get(1)).addHead(command.get(2));
+                        var lineName = command.get(1);
+                        if (isValidLineName(lineName)) {
+                            metroLines.get(lineName).addHead(command.get(2));
+                        }
+                    } else {
+                        System.out.println("Invalid format! Command should be: /add-head [line] [station]");
                     }
                 }
                 case "/remove" -> {
                     if (command.size() == 3) {
-                        metroLines.get(command.get(1)).remove(command.get(2));
+                        var lineName = command.get(1);
+                        if (isValidLineName(lineName)) {
+                            metroLines.get(lineName).remove(command.get(2));
+                        }
+                    } else {
+                        System.out.println("Invalid format! Command should be: /remove [line] [station]");
                     }
                 }
 
@@ -51,12 +72,21 @@ public class Controller {
                 // command(2) and command(4) are the station names
                 case "/connect" -> {
                     if (command.size() == 5) {
-                        Station stationFrom = metroLines.get(command.get(1))
-                                                        .getStation(command.get(2));
-                        Station stationTo = metroLines.get(command.get(3))
-                                                      .getStation(command.get(4));
-                        stationFrom.setTransfers(stationTo);
-                        stationTo.setTransfers(stationFrom);
+                        var lineFrom = command.get(1);
+                        var lineTo = command.get(3);
+                        if (isValidLineName(lineFrom) && isValidLineName(lineTo)) {
+                            Station stationFrom = metroLines.get(lineFrom)
+                                                            .getStation(command.get(2));
+                            Station stationTo = metroLines.get(lineTo)
+                                                          .getStation(command.get(4));
+                            if (stationFrom != null && stationTo != null) {
+                                stationFrom.setTransfers(stationTo);
+                                stationTo.setTransfers(stationFrom);
+                            }
+                        }
+                    } else {
+                        System.out.println("Invalid format! Command should be: /connect [line1] [station1] [line2] " +
+                                           "[station2]");
                     }
                 }
 
@@ -65,10 +95,29 @@ public class Controller {
                 case "/route" -> {
                     if (command.size() == 5) {
                         printRoute(getRoute(command.get(1), command.get(2), command.get(3), command.get(4)));
+                    } else {
+                        System.out.println("Invalid format! Command should be: /remove [startLine] [startStation] " +
+                                           "[endLine] [endStation]");
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Determines if the line name is valid or not.
+     *
+     * @param lineName
+     * String containing the name of the line to check for
+     *
+     * @return true if the line is in our lines map
+     */
+    private boolean isValidLineName(final String lineName) {
+        if (metroLines.containsKey(lineName)) {
+            return true;
+        }
+        System.out.println("Invalid line name: " + lineName);
+        return false;
     }
 
     /**

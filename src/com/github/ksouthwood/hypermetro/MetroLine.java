@@ -79,7 +79,12 @@ public class MetroLine {
     }
 
     Station getStation(final String station) {
-        return stations.get(station);
+        if (stations.containsKey(station)) {
+            return stations.get(station);
+        }
+
+        System.out.printf("No station %s on the %s line.", station, lineName);
+        return null;
     }
 
 }

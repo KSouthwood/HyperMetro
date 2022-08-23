@@ -29,6 +29,10 @@ public class CommandParser {
                 var input = reader.readLine();
                 if (input != null && !input.isEmpty()) {
                     command = parseString(input);
+                    if (!validCommands.contains(command.get(0))) {
+                        System.out.printf("Invalid command: %s%n", command.get(0));
+                        System.out.printf("Valid commands are: %s%n", validCommands);
+                    }
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
