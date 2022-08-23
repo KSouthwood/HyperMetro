@@ -44,8 +44,7 @@ class HyperMetroTests {
     @ParameterizedTest
     @MethodSource("commandParseTestStrings")
     public void testParseString(final String command, final List<String> expectedResult) {
-        var lines = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
-        var commandParser = new CommandParser(lines, new BufferedReader(new StringReader(command)));
+        var commandParser = new CommandParser(new BufferedReader(new StringReader(command)));
         assertEquals(expectedResult, commandParser.getCommand());
     }
 
@@ -89,8 +88,9 @@ class HyperMetroTests {
         String result;
         try {
             var lines = new FileOperations().readJSONFile("test/test_files/stage_2_example.json");
-            var parser = new CommandParser(lines, reader);
-            result = tapSystemOutNormalized(parser::start);
+            var parser = new CommandParser(reader);
+            var controller = new Controller(lines, parser);
+            result = tapSystemOutNormalized(controller::start);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -142,8 +142,9 @@ class HyperMetroTests {
         String result;
         try {
             var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
-            var parser = new CommandParser(lines, reader);
-            result = tapSystemOutNormalized(parser::start);
+            var parser = new CommandParser(reader);
+            var controller = new Controller(lines, parser);
+            result = tapSystemOutNormalized(controller::start);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -185,8 +186,9 @@ class HyperMetroTests {
         String result;
         try {
             var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
-            var parser = new CommandParser(lines, reader);
-            result = tapSystemOutNormalized(parser::start);
+            var parser = new CommandParser(reader);
+            var controller = new Controller(lines, parser);
+            result = tapSystemOutNormalized(controller::start);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

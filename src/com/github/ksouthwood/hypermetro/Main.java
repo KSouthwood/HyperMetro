@@ -13,7 +13,7 @@ public class Main {
 
     static void readFile(final String filename, final BufferedReader reader) {
         var lines  = new FileOperations().readJSONFile(filename);
-        var parser = new CommandParser(lines, reader);
-        parser.start();
+        var controller = new Controller(lines, new CommandParser(reader));
+        controller.start();
     }
 }
