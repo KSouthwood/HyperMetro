@@ -18,37 +18,37 @@ import static org.junit.jupiter.api.Assertions.*;
 class HyperMetroTests {
     @Test
     public void testReadEmptyFile() {
-        var result = new FileOperations().readFile("test/test_files/empty.txt");
+        var result = new FileOperations().readJSONFile("test/test_files/empty.txt");
         assertTrue(result.isEmpty());
     }
 
     @Test
-    public void testBaltimoreFile() {
-        var result = new FileOperations().readFile("test/test_files/baltimore.txt");
-        //noinspection SpellCheckingInspection
-        assertEquals(result,
-                     List.of("Owings Mills", "Old Court", "Milford Mill", "Reiserstown Plaza", "Rogers Avenue",
-                             "West Cold Spring", "Mondawmin", "Penn North", "Uptown", "State Center",
-                             "Lexington Market", "Charles Center", "Shot Tower/Market Place",
-                             "Johns Hopkins Hospital"));
+    public void testBaltimoreFileStage2AndLater() throws Exception {
+        var output = tapSystemOutNormalized(() -> {
+            var lines = new FileOperations().readJSONFile("test/test_files/baltimore.txt");
+            assertTrue(lines.isEmpty());
+        });
+        assertEquals("File to be read is malformed JSON. Please specify a valid JSON file.\n", output);
     }
 
     @Test
-    public void testInvalidFile() throws Exception {
-        var output = tapSystemOutNormalized(() -> assertNull(new FileOperations()
-                                                                     .readFile("test/test_files/invalid.txt")));
+    public void testFileDoesNotExist() throws Exception {
+        var output = tapSystemOutNormalized(() -> {
+            var lines = new FileOperations().readJSONFile("test/test_files/invalid.txt");
+            assertNull(lines);
+        });
         assertEquals("Error! Such a file doesn't exist!\n", output);
     }
 
 
     @ParameterizedTest
-    @MethodSource("commandParseTestStrings")
-    public void testParseString(final String command, final List<String> expectedResult) {
+    @MethodSource("parseStringValidCommands")
+    public void testParseStringWithValidCommands(final String command, final List<String> expectedResult) {
         var commandParser = new CommandParser(new BufferedReader(new StringReader(command)));
         assertEquals(expectedResult, commandParser.getCommand());
     }
 
-    private static Stream<Arguments> commandParseTestStrings() {
+    private static Stream<Arguments> parseStringValidCommands() {
         return Stream.of(Arguments.of("""
                                       /exit
                                       """,
@@ -66,9 +66,6 @@ class HyperMetroTests {
                                       """,
                                       List.of("/remove", "Jake's Line", "My \"Jumping\" Place")),
                          Arguments.of("""
-                                      /add Baltimore "Maryland"
-                                      
-                                      output
                                       /append Baltimore Maryland
                                       """,
                                       List.of("/append", "Baltimore", "Maryland")),
@@ -196,6 +193,7 @@ class HyperMetroTests {
     }
 
     private static Stream<Arguments> stage4Example() {
+        //noinspection SpellCheckingInspection
         return Stream.of(Arguments.of("""
                                       /route Metro-Railway "Edgver road" Hammersmith-and-City Westbourne-park
                                       /exit
