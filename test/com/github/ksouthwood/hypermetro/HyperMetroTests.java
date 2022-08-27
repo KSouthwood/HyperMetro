@@ -1,6 +1,6 @@
 package com.github.ksouthwood.hypermetro;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -16,17 +16,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 class HyperMetroTests {
-    @Test
-    public void testReadEmptyFile() {
-        var result = new FileOperations().readJSONFile("test/test_files/empty.txt");
-        assertTrue(result.isEmpty());
+
+    @BeforeAll
+    static void setFileOperations() {
     }
 
     @Test
-    public void testBaltimoreFileStage2AndLater() throws Exception {
+    public void testReadEmptyFile() {
+        var result = FileOperations.readJSONFile("test/test_files/empty.txt");
+        assertTrue(result != null && result.isEmpty());
+    }
+
+    @Test
+    public void testMalformedJSONFile() throws Exception {
         var output = tapSystemOutNormalized(() -> {
-            var lines = new FileOperations().readJSONFile("test/test_files/baltimore.txt");
-            assertTrue(lines.isEmpty());
+            var lines = FileOperations.readJSONFile("test/test_files/baltimore.txt");
+            assertTrue(lines != null && lines.isEmpty());
         });
         assertEquals("File to be read is malformed JSON. Please specify a valid JSON file.\n", output);
     }
@@ -34,7 +39,7 @@ class HyperMetroTests {
     @Test
     public void testFileDoesNotExist() throws Exception {
         var output = tapSystemOutNormalized(() -> {
-            var lines = new FileOperations().readJSONFile("test/test_files/invalid.txt");
+            var lines = FileOperations.readJSONFile("test/test_files/invalid.txt");
             assertNull(lines);
         });
         assertEquals("Error! Such a file doesn't exist!\n", output);
@@ -77,14 +82,14 @@ class HyperMetroTests {
         );
     }
 
-    @Disabled("Not testing Stage 2 anymore.")
+//    @Disabled("Not testing Stage 2 anymore.")
     @ParameterizedTest
     @MethodSource("stage2Example")
     public void testStage2Example(final String commands, final String expected) {
         var reader = new BufferedReader(new StringReader(commands));
         String result;
         try {
-            var lines = new FileOperations().readJSONFile("test/test_files/stage_2_example.json");
+            var lines = FileOperations.readJSONFile("test/test_files/stage_2_example.json");
             var parser = new CommandParser(reader);
             var controller = new Controller(lines, parser);
             result = tapSystemOutNormalized(controller::start);
@@ -135,10 +140,10 @@ class HyperMetroTests {
     @ParameterizedTest
     @MethodSource("stage3Example")
     public void testStage3Example(final String commands, final String expected) {
-        var reader = new BufferedReader((new StringReader(commands)));
+        var reader = new BufferedReader(new StringReader(commands));
         String result;
         try {
-            var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
+            var lines  = FileOperations.readJSONFile("test/test_files/stage_3_example.json");
             var parser = new CommandParser(reader);
             var controller = new Controller(lines, parser);
             result = tapSystemOutNormalized(controller::start);
@@ -182,7 +187,7 @@ class HyperMetroTests {
         var reader = new BufferedReader((new StringReader(commands)));
         String result;
         try {
-            var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
+            var lines  = FileOperations.readJSONFile("test/test_files/stage_3_example.json");
             var parser = new CommandParser(reader);
             var controller = new Controller(lines, parser);
             result = tapSystemOutNormalized(controller::start);

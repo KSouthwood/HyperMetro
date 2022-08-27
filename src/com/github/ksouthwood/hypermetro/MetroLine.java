@@ -72,8 +72,20 @@ public class MetroLine {
     void remove(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
             Station toRemove = stations.get(stationName);
-            toRemove.getPrev().setNext(toRemove.getNext());
-            toRemove.getNext().setPrev(toRemove.getPrev());
+            Station previous = toRemove.getPrev();
+            Station next     = toRemove.getNext();
+            if (previous != null) {
+                previous.setNext(toRemove.getNext());
+            }
+            if (next != null) {
+                next.setPrev(toRemove.getPrev());
+            }
+            if (toRemove == head) {
+                head = next;
+            }
+            if (toRemove == tail) {
+                tail = previous;
+            }
             stations.remove(stationName);
         }
     }
