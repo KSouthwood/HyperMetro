@@ -212,4 +212,117 @@ class HyperMetroTests {
                                       """
                                       ));
     }
+
+    @ParameterizedTest
+    @MethodSource("stage5Example")
+    public void testStage5Example(final String commands, final String expected) {
+        var reader    = new BufferedReader(new StringReader(commands));
+        String result = null;
+        try {
+            var lines      = FileOperations.readJSONFile("test/test_files/stage_5_example.json");
+            var parser     = new CommandParser(reader);
+            var controller = new Controller(lines, parser);
+            result = tapSystemOutNormalized(controller::start);
+        } catch (Exception ignored) {
+
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> stage5Example() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /fastest-route Hammersmith-and-City "Baker street" Hammersmith-and-City Hammersmith
+                                      /exit
+                                      """,
+                                      """
+                                      Baker street
+                                      Westbourne-park
+                                      Hammersmith
+                                      Total: 4 minutes in the way
+                                      """),
+                         Arguments.of("""
+                                      /append Hammersmith-and-City New-Station 4
+                                      /remove Hammersmith-and-City Hammersmith
+                                      /output Hammersmith-and-City
+                                      /exit
+                                      """,
+                                      """
+                                      depot
+                                      Westbourne-park
+                                      Baker street - Baker street (Metro-Railway)
+                                      New-Station
+                                      depot
+                                      """));
+    }
+
+    @ParameterizedTest
+    @MethodSource("advancedRouteFind_Prague_NoTime")
+    public void testAdvancedRouteFind_Prague_NoTime(final String commands, final String expected) throws Exception {
+        var reader = new BufferedReader(new StringReader(commands));
+        var result = tapSystemOutNormalized(() -> Main.readFile("test/test_files/prague_subway.json", reader));
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> advancedRouteFind_Prague_NoTime() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /route "Linka C" "Vy\u0161ehrad" "Linka B" "N\u00e1m\u011bst\u00ed Republiky"
+                                      /exit
+                                      """,
+                                      """
+                                      Vy\u0161ehrad
+                                      I.P.Pavlova
+                                      Muzeum
+                                      Transition to line Linka A
+                                      Muzeum
+                                      M\u016fstek
+                                      Transition to line Linka B
+                                      M\u016fstek
+                                      N\u00e1m\u011bst\u00ed Republiky
+                                      """));
+    }
+
+    @ParameterizedTest
+    @MethodSource("advancedRouteFind_Prague_WithTime")
+    public void testAdvancedRouteFind_Prague_WithTime(final String commands, final String expected) {
+        String result;
+        var reader = new BufferedReader(new StringReader(commands));
+        try {
+            result = tapSystemOutNormalized(() ->
+                                                        Main.readFile("test/test_files/prague_w_time.json", reader));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> advancedRouteFind_Prague_WithTime() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /route "Linka C" Vysehrad "Linka B" "Namesti Republiky"
+                                      /fastest-route "Linka C" Vysehrad "Linka B" "Namesti Republiky"
+                                      /exit
+                                      """,
+                                      """
+                                      Vysehrad
+                                      I.P.Pavlova
+                                      Muzeum
+                                      Transition to line Linka A
+                                      Muzeum
+                                      Mustek
+                                      Transition to line Linka B
+                                      Mustek
+                                      Namesti Republiky
+                                      Vysehrad
+                                      I.P.Pavlova
+                                      Muzeum
+                                      Hlavni nadrazi
+                                      Florenc
+                                      Transition to line Linka B
+                                      Florenc
+                                      Namesti Republiky
+                                      Total: 29 minutes in the way
+                                      """));
+    }
 }
