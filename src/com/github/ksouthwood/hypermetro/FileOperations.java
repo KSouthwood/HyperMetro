@@ -56,6 +56,7 @@ public class FileOperations {
     private static HashMap<String, MetroLine> parseJSONFile(final BufferedReader file) throws JsonSyntaxException {
         // map to hold each metro line keyed by line name
         HashMap<String, MetroLine> metroLines = new HashMap<>();
+        TRANSFERS.clear();
 
         JsonElement fileElement = JsonParser.parseReader(file);
 
@@ -82,8 +83,8 @@ public class FileOperations {
     /**
      * Creates the map of lines and stations.
      * <p>
-     * Goes through the parse tree of the file processing each line object and returning a map of each line with
-     * their respective stations in the correct order.
+     * Goes through the parse tree of the file processing each line object and returning a map of each line with their
+     * respective stations in the correct order.
      *
      * @param fileObject
      *         the JSON object holding the parse tree of the read file
@@ -146,8 +147,10 @@ public class FileOperations {
         JsonObject stationDetails = station.getAsJsonObject();
         String     stationName    = stationDetails.get("name").getAsString();
         addTransferStations(stationDetails.get("transfer"), stationName);
+        JsonElement timeElement = stationDetails.has("time") ? stationDetails.get("time") : JsonNull.INSTANCE;
 
-        return new Station(stationName, lineName);
+        return timeElement.isJsonNull() ? new Station(stationName, lineName)
+                                        : new Station(stationName, lineName, timeElement.getAsInt());
     }
 
     /**
@@ -167,7 +170,7 @@ public class FileOperations {
 
         // the element is a single JSON element so add it to the transfers map
         if (!transferElement.isJsonArray()) {
-            TRANSFERS.put(stationName,
+            TRANSFERS.putIfAbsent(stationName,
                           new ArrayList<>(List.of(lineName,
                                                   transferElement.getAsJsonObject().get("line").getAsString())));
             return;
@@ -186,6 +189,6 @@ public class FileOperations {
         for (var transfer : transferArray) {
             transferLines.add(transfer.getAsJsonObject().get("line").getAsString());
         }
-        TRANSFERS.put(stationName, transferLines);
+        TRANSFERS.putIfAbsent(stationName, transferLines);
     }
 }

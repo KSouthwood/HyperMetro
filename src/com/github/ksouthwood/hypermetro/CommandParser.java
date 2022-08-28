@@ -8,7 +8,7 @@ public class CommandParser {
     private final BufferedReader reader;
 
     private final List<String> validCommands = List.of("/append", "/add-head", "/remove", "/output", "/exit",
-                                                       "/connect", "/route");
+                                                       "/connect", "/route", "/fastest-route");
 
     public CommandParser(BufferedReader reader) {
         this.reader = reader;
