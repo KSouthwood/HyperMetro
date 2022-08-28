@@ -18,7 +18,7 @@ public class Main {
     }
 
     static void readFile(final String filename, final BufferedReader reader) {
-        var lines  = new FileOperations().readJSONFile(filename);
+        var lines = FileOperations.readJSONFile(filename);
         if (lines == null) {
             return;
         }

@@ -1,6 +1,6 @@
 package com.github.ksouthwood.hypermetro;
 
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -16,17 +16,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 class HyperMetroTests {
-    @Test
-    public void testReadEmptyFile() {
-        var result = new FileOperations().readJSONFile("test/test_files/empty.txt");
-        assertTrue(result.isEmpty());
+
+    @BeforeAll
+    static void setFileOperations() {
     }
 
     @Test
-    public void testBaltimoreFileStage2AndLater() throws Exception {
+    public void testReadEmptyFile() {
+        var result = FileOperations.readJSONFile("test/test_files/empty.txt");
+        assertTrue(result != null && result.isEmpty());
+    }
+
+    @Test
+    public void testMalformedJSONFile() throws Exception {
         var output = tapSystemOutNormalized(() -> {
-            var lines = new FileOperations().readJSONFile("test/test_files/baltimore.txt");
-            assertTrue(lines.isEmpty());
+            var lines = FileOperations.readJSONFile("test/test_files/baltimore.txt");
+            assertTrue(lines != null && lines.isEmpty());
         });
         assertEquals("File to be read is malformed JSON. Please specify a valid JSON file.\n", output);
     }
@@ -34,7 +39,7 @@ class HyperMetroTests {
     @Test
     public void testFileDoesNotExist() throws Exception {
         var output = tapSystemOutNormalized(() -> {
-            var lines = new FileOperations().readJSONFile("test/test_files/invalid.txt");
+            var lines = FileOperations.readJSONFile("test/test_files/invalid.txt");
             assertNull(lines);
         });
         assertEquals("Error! Such a file doesn't exist!\n", output);
@@ -77,14 +82,14 @@ class HyperMetroTests {
         );
     }
 
-    @Disabled("Not testing Stage 2 anymore.")
+//    @Disabled("Not testing Stage 2 anymore.")
     @ParameterizedTest
     @MethodSource("stage2Example")
     public void testStage2Example(final String commands, final String expected) {
         var reader = new BufferedReader(new StringReader(commands));
         String result;
         try {
-            var lines = new FileOperations().readJSONFile("test/test_files/stage_2_example.json");
+            var lines = FileOperations.readJSONFile("test/test_files/stage_2_example.json");
             var parser = new CommandParser(reader);
             var controller = new Controller(lines, parser);
             result = tapSystemOutNormalized(controller::start);
@@ -135,10 +140,10 @@ class HyperMetroTests {
     @ParameterizedTest
     @MethodSource("stage3Example")
     public void testStage3Example(final String commands, final String expected) {
-        var reader = new BufferedReader((new StringReader(commands)));
+        var reader = new BufferedReader(new StringReader(commands));
         String result;
         try {
-            var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
+            var lines  = FileOperations.readJSONFile("test/test_files/stage_3_example.json");
             var parser = new CommandParser(reader);
             var controller = new Controller(lines, parser);
             result = tapSystemOutNormalized(controller::start);
@@ -182,7 +187,7 @@ class HyperMetroTests {
         var reader = new BufferedReader((new StringReader(commands)));
         String result;
         try {
-            var lines  = new FileOperations().readJSONFile("test/test_files/stage_3_example.json");
+            var lines  = FileOperations.readJSONFile("test/test_files/stage_3_example.json");
             var parser = new CommandParser(reader);
             var controller = new Controller(lines, parser);
             result = tapSystemOutNormalized(controller::start);
@@ -206,5 +211,118 @@ class HyperMetroTests {
                                       Westbourne-park
                                       """
                                       ));
+    }
+
+    @ParameterizedTest
+    @MethodSource("stage5Example")
+    public void testStage5Example(final String commands, final String expected) {
+        var reader    = new BufferedReader(new StringReader(commands));
+        String result = null;
+        try {
+            var lines      = FileOperations.readJSONFile("test/test_files/stage_5_example.json");
+            var parser     = new CommandParser(reader);
+            var controller = new Controller(lines, parser);
+            result = tapSystemOutNormalized(controller::start);
+        } catch (Exception ignored) {
+
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> stage5Example() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /fastest-route Hammersmith-and-City "Baker street" Hammersmith-and-City Hammersmith
+                                      /exit
+                                      """,
+                                      """
+                                      Baker street
+                                      Westbourne-park
+                                      Hammersmith
+                                      Total: 4 minutes in the way
+                                      """),
+                         Arguments.of("""
+                                      /append Hammersmith-and-City New-Station 4
+                                      /remove Hammersmith-and-City Hammersmith
+                                      /output Hammersmith-and-City
+                                      /exit
+                                      """,
+                                      """
+                                      depot
+                                      Westbourne-park
+                                      Baker street - Baker street (Metro-Railway)
+                                      New-Station
+                                      depot
+                                      """));
+    }
+
+    @ParameterizedTest
+    @MethodSource("advancedRouteFind_Prague_NoTime")
+    public void testAdvancedRouteFind_Prague_NoTime(final String commands, final String expected) throws Exception {
+        var reader = new BufferedReader(new StringReader(commands));
+        var result = tapSystemOutNormalized(() -> Main.readFile("test/test_files/prague_subway.json", reader));
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> advancedRouteFind_Prague_NoTime() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /route "Linka C" "Vy\u0161ehrad" "Linka B" "N\u00e1m\u011bst\u00ed Republiky"
+                                      /exit
+                                      """,
+                                      """
+                                      Vy\u0161ehrad
+                                      I.P.Pavlova
+                                      Muzeum
+                                      Transition to line Linka A
+                                      Muzeum
+                                      M\u016fstek
+                                      Transition to line Linka B
+                                      M\u016fstek
+                                      N\u00e1m\u011bst\u00ed Republiky
+                                      """));
+    }
+
+    @ParameterizedTest
+    @MethodSource("advancedRouteFind_Prague_WithTime")
+    public void testAdvancedRouteFind_Prague_WithTime(final String commands, final String expected) {
+        String result;
+        var reader = new BufferedReader(new StringReader(commands));
+        try {
+            result = tapSystemOutNormalized(() ->
+                                                        Main.readFile("test/test_files/prague_w_time.json", reader));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(expected, result);
+    }
+
+    private static Stream<Arguments> advancedRouteFind_Prague_WithTime() {
+        //noinspection SpellCheckingInspection
+        return Stream.of(Arguments.of("""
+                                      /route "Linka C" Vysehrad "Linka B" "Namesti Republiky"
+                                      /fastest-route "Linka C" Vysehrad "Linka B" "Namesti Republiky"
+                                      /exit
+                                      """,
+                                      """
+                                      Vysehrad
+                                      I.P.Pavlova
+                                      Muzeum
+                                      Transition to line Linka A
+                                      Muzeum
+                                      Mustek
+                                      Transition to line Linka B
+                                      Mustek
+                                      Namesti Republiky
+                                      Vysehrad
+                                      I.P.Pavlova
+                                      Muzeum
+                                      Hlavni nadrazi
+                                      Florenc
+                                      Transition to line Linka B
+                                      Florenc
+                                      Namesti Republiky
+                                      Total: 29 minutes in the way
+                                      """));
     }
 }

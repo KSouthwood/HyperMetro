@@ -5,6 +5,7 @@ import java.util.*;
 public class Station {
     private final String name;
     private final String line;
+    private final int    time;
 
     private Station prev;
     private Station next;
@@ -12,8 +13,13 @@ public class Station {
     private final List<Station> transfers = new LinkedList<>();
 
     Station(final String name, final String line) {
+        this(name, line, 0);
+    }
+
+    Station(final String name, final String line, final int time) {
         this.name = name;
         this.line = line;
+        this.time = time;
         this.next = null;
         this.prev = null;
     }
@@ -60,5 +66,9 @@ public class Station {
 
     String getLine() {
         return line;
+    }
+
+    int getTime() {
+        return time;
     }
 }

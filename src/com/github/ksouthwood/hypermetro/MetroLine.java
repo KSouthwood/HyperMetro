@@ -3,7 +3,7 @@ package com.github.ksouthwood.hypermetro;
 import java.util.LinkedHashMap;
 
 public class MetroLine {
-    private final String  lineName;
+    private final String lineName;
 
     private Station head;
     private Station tail;
@@ -49,9 +49,9 @@ public class MetroLine {
         System.out.println("depot");
     }
 
-    void addHead(final String stationName) {
+    void addHead(final String stationName, final int time) {
         if (stationName != null && !stationName.isEmpty()) {
-            Station newStation = new Station(stationName, lineName);
+            Station newStation = new Station(stationName, lineName, time);
             newStation.setNext(head);
             head.setPrev(newStation);
             head = newStation;
@@ -59,9 +59,9 @@ public class MetroLine {
         }
     }
 
-    void append(final String stationName) {
+    void append(final String stationName, final int time) {
         if (stationName != null && !stationName.isEmpty()) {
-            Station newStation = new Station(stationName, lineName);
+            Station newStation = new Station(stationName, lineName, time);
             newStation.setPrev(tail);
             tail.setNext(newStation);
             tail = newStation;
@@ -72,8 +72,20 @@ public class MetroLine {
     void remove(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
             Station toRemove = stations.get(stationName);
-            toRemove.getPrev().setNext(toRemove.getNext());
-            toRemove.getNext().setPrev(toRemove.getPrev());
+            Station previous = toRemove.getPrev();
+            Station next     = toRemove.getNext();
+            if (previous != null) {
+                previous.setNext(toRemove.getNext());
+            }
+            if (next != null) {
+                next.setPrev(toRemove.getPrev());
+            }
+            if (toRemove == head) {
+                head = next;
+            }
+            if (toRemove == tail) {
+                tail = previous;
+            }
             stations.remove(stationName);
         }
     }
