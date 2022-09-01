@@ -7,8 +7,8 @@ public class Station {
     private final String line;
     private final int    time;
 
-    private Station prev;
-    private Station next;
+    private LinkedList<Station> prev;
+    private LinkedList<Station> next;
 
     private final List<Station> transfers = new LinkedList<>();
 
@@ -40,26 +40,30 @@ public class Station {
         return transfers;
     }
 
-    void setPrev(final Station previous) {
+    void setPrev(final LinkedList<Station> previous) {
         this.prev = previous;
     }
 
-    Station getPrev() {
+    LinkedList<Station> getPrev() {
         return prev;
     }
 
-    void setNext(final Station next) {
+    void setNext(final LinkedList<Station> next) {
         this.next = next;
     }
 
-    Station getNext() {
+    LinkedList<Station> getNext() {
         return next;
     }
 
     LinkedList<Station> getNeighbors() {
         LinkedList<Station> neighbors = new LinkedList<>(transfers);
-        neighbors.add(prev);
-        neighbors.add(next);
+        if (prev != null) {
+            neighbors.addAll(prev);
+        }
+        if (next != null) {
+            neighbors.addAll(next);
+        }
         neighbors.removeIf(Objects::isNull);
         return neighbors;
     }

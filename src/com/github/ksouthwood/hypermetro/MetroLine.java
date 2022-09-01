@@ -1,6 +1,6 @@
 package com.github.ksouthwood.hypermetro;
 
-import java.util.LinkedHashMap;
+import java.util.*;
 
 public class MetroLine {
     private final String lineName;
@@ -15,11 +15,23 @@ public class MetroLine {
         this.head = firstStation;
         this.tail = lastStation;
 
-        var current = head;
-        while (current != null) {
+        Deque<Station> stationDeque = new ArrayDeque<>();
+        stationDeque.add(head);
+        while (!stationDeque.isEmpty()) {
+            Station current = stationDeque.remove();
             stations.put(current.getName(), current);
-            current = current.getNext();
+            if (current.getNext() != null) {
+                stationDeque.addAll(current.getNext());
+            }
         }
+    }
+
+    MetroLine(final String lineName, final Station firstStation, final Station lastStation,
+              final LinkedHashMap<String, Station> stationLinkedHashMap) {
+        this.lineName = lineName;
+        this.head = firstStation;
+        this.tail = lastStation;
+        this.stations = stationLinkedHashMap;
     }
 
     /**
@@ -33,9 +45,11 @@ public class MetroLine {
             return;
         }
 
-        Station current = head;
+        ArrayDeque<Station> stationDeque = new ArrayDeque<>();
+        stationDeque.add(head);
         System.out.println("depot");
-        while (current != null) {
+        while (!stationDeque.isEmpty()) {
+            Station current = stationDeque.remove();
             System.out.print(current.getName());
             if (current.hasTransfers()) {
                 var transfer = current.getTransfers();
@@ -44,7 +58,9 @@ public class MetroLine {
                 }
             }
             System.out.println();
-            current = current.getNext();
+            if (current.getNext() != null) {
+                stationDeque.addAll(current.getNext());
+            }
         }
         System.out.println("depot");
     }
@@ -52,8 +68,8 @@ public class MetroLine {
     void addHead(final String stationName, final int time) {
         if (stationName != null && !stationName.isEmpty()) {
             Station newStation = new Station(stationName, lineName, time);
-            newStation.setNext(head);
-            head.setPrev(newStation);
+            newStation.setNext(new LinkedList<>(List.of(head)));
+            head.setPrev(new LinkedList<>(List.of(newStation)));
             head = newStation;
             stations.put(stationName, newStation);
         }
@@ -62,8 +78,8 @@ public class MetroLine {
     void append(final String stationName, final int time) {
         if (stationName != null && !stationName.isEmpty()) {
             Station newStation = new Station(stationName, lineName, time);
-            newStation.setPrev(tail);
-            tail.setNext(newStation);
+            newStation.setPrev(new LinkedList<>(List.of(tail)));
+            tail.setNext(new LinkedList<>(List.of(newStation)));
             tail = newStation;
             stations.put(stationName, newStation);
         }
@@ -71,20 +87,20 @@ public class MetroLine {
 
     void remove(final String stationName) {
         if (stationName != null && !stationName.isEmpty()) {
-            Station toRemove = stations.get(stationName);
-            Station previous = toRemove.getPrev();
-            Station next     = toRemove.getNext();
+            Station             toRemove = stations.get(stationName);
+            LinkedList<Station> previous = toRemove.getPrev();
+            LinkedList<Station> next     = toRemove.getNext();
             if (previous != null) {
-                previous.setNext(toRemove.getNext());
+                previous.forEach(station -> station.setNext(next));
             }
             if (next != null) {
-                next.setPrev(toRemove.getPrev());
+                next.forEach(station -> station.setPrev(previous));
             }
             if (toRemove == head) {
-                head = next;
+                head = next.get(0);
             }
             if (toRemove == tail) {
-                tail = previous;
+                tail = previous.get(0);
             }
             stations.remove(stationName);
         }
@@ -98,5 +114,4 @@ public class MetroLine {
         System.out.printf("No station %s on the %s line.", station, lineName);
         return null;
     }
-
 }

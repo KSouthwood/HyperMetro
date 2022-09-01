@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class FileOperations {
-    private static final HashMap<String, ArrayList<String>> TRANSFERS = new HashMap<>();
+    private static final HashMap<Station, HashMap<String, String>> TRANSFERS = new HashMap<>();
 
     private static String lineName;
 
@@ -28,18 +28,19 @@ public class FileOperations {
      * @return Map of line name and corresponding MetroLine object or null if the file didn't exist.
      */
     static HashMap<String, MetroLine> readJSONFile(final String filename) {
-        HashMap<String, MetroLine> stationsList = new HashMap<>();
+        HashMap<String, MetroLine> metroLines = new HashMap<>();
         try (BufferedReader file = new BufferedReader(new FileReader(filename))) {
-            stationsList = parseJSONFile(file);
+            parseJSONFile(file, metroLines);
         } catch (FileNotFoundException e) {
             System.out.println("Error! Such a file doesn't exist!");
             return null;
         } catch (JsonSyntaxException e) {
             System.out.println("File to be read is malformed JSON. Please specify a valid JSON file.");
+            return null;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return stationsList;
+        return metroLines;
     }
 
     /**
@@ -49,35 +50,28 @@ public class FileOperations {
      *
      * @param file
      *         Object to read JSON from.
-     *
-     * @return Map of MetroLine objects with their name as keys. Map is empty if there is a problem encountered with the
-     *         file to be read.
      */
-    private static HashMap<String, MetroLine> parseJSONFile(final BufferedReader file) throws JsonSyntaxException {
+    private static void parseJSONFile(final BufferedReader file, HashMap<String, MetroLine> metroLines) throws JsonSyntaxException {
         // map to hold each metro line keyed by line name
-        HashMap<String, MetroLine> metroLines = new HashMap<>();
         TRANSFERS.clear();
 
-        JsonElement fileElement = JsonParser.parseReader(file);
+        JsonElement fileJsonParseTree = JsonParser.parseReader(file);
 
-        if (fileElement.isJsonNull()) {     // if we have a JsonNull value, the file read is empty
-            return metroLines;
+        if (fileJsonParseTree.isJsonNull()) {     // if we have a JsonNull value, the file read is empty
+            return;
         }
 
-        metroLines = createLines(fileElement.getAsJsonObject());
+        createLines(fileJsonParseTree.getAsJsonObject(), metroLines);
 
         // add any transfer points between the lines. Needs to be done after the lines
         // are created to ensure we have all the necessary station objects created.
-        for (var transferStation : TRANSFERS.keySet()) {
-            String  lineA = TRANSFERS.get(transferStation).get(0);
-            String  lineB = TRANSFERS.get(transferStation).get(1);
-            Station statA = metroLines.get(lineA).getStation(transferStation);
-            Station statB = metroLines.get(lineB).getStation(transferStation);
-            statA.setTransfers(statB);
-            statB.setTransfers(statA);
+        for (var transferFromStation : TRANSFERS.keySet()) {
+            var transferLines = TRANSFERS.get(transferFromStation);
+            transferLines.forEach((line, station) -> {
+                Station transferToStation = metroLines.get(line).getStation(station);
+                transferFromStation.setTransfers(transferToStation);
+            });
         }
-
-        return metroLines;
     }
 
     /**
@@ -88,42 +82,86 @@ public class FileOperations {
      *
      * @param fileObject
      *         the JSON object holding the parse tree of the read file
-     *
-     * @return the map of the lines with the stations
      */
-    private static HashMap<String, MetroLine> createLines(final JsonObject fileObject) {
-        HashMap<String, MetroLine> metroLines = new HashMap<>();
-
+    private static void createLines(final JsonObject fileObject, HashMap<String, MetroLine> metroLines) {
         // iterate over each metro line in the file
         for (var metroLine : fileObject.entrySet()) {
             lineName = metroLine.getKey();
+            var stations = metroLine.getValue();
 
-            // map to hold the stations, sorts by ascending key value
-            TreeMap<Integer, Station> stationTreeMap = new TreeMap<>();
 
-            // iterate through each station, reading its specifications (name, transfer status, etc.)
-            for (var stationEntry : fileObject.getAsJsonObject(lineName).entrySet()) {
-                // get details for the station
-                int     stationNumber = Integer.parseInt(stationEntry.getKey());
-                Station station       = createStation(stationEntry.getValue());
-                stationTreeMap.put(stationNumber, station);
+            if (stations.isJsonObject()) {
+                createLineFromJsonObject(stations.getAsJsonObject(), metroLines);
             }
 
-            // update the stations with their previous and next stops
-            stationTreeMap.forEach((key, val) -> {
-                var prevStation = stationTreeMap.get(key - 1);
-                var nextStation = stationTreeMap.get(key + 1);
-                val.setPrev(prevStation);
-                val.setNext(nextStation);
-            });
+            if (stations.isJsonArray()) {
+                createLineFromJsonArray(stations.getAsJsonArray(), metroLines);
+            }
+        }
+    }
 
-            // get the first and last stations and create the line
-            var head = stationTreeMap.firstEntry().getValue();
-            var tail = stationTreeMap.lastEntry().getValue();
-            metroLines.put(lineName, new MetroLine(lineName, head, tail));
+    private static void createLineFromJsonObject(final JsonObject lineObject, HashMap<String, MetroLine> metroLines) {
+        // map to hold the stations, sorts by ascending key value
+        TreeMap<Integer, Station> stationTreeMap = new TreeMap<>();
+
+        // iterate through each station, reading its specifications (name, transfer status, etc.)
+        for (var stationEntry : lineObject.entrySet()) {
+            // get details for the station
+            int     stationNumber = Integer.parseInt(stationEntry.getKey());
+            Station station       = createStation(stationEntry.getValue());
+            stationTreeMap.put(stationNumber, station);
         }
 
-        return metroLines;
+        // update the stations with their previous and next stops
+        stationTreeMap.forEach((key, val) -> {
+            var prevStation = stationTreeMap.get(key - 1);
+            if (prevStation != null) {
+                val.setPrev(new LinkedList<>(List.of(prevStation)));
+            }
+
+            var nextStation = stationTreeMap.get(key + 1);
+            if (nextStation != null) {
+                val.setNext(new LinkedList<>(List.of(nextStation)));
+            }
+        });
+
+        // get the first and last stations and create the line
+        var head = stationTreeMap.firstEntry().getValue();
+        var tail = stationTreeMap.lastEntry().getValue();
+        metroLines.put(lineName, new MetroLine(lineName, head, tail));
+    }
+
+    private static void createLineFromJsonArray(final JsonArray lineArray, HashMap<String, MetroLine> metroLines) {
+        LinkedHashMap<String, Station> stationLinkedHashMap = new LinkedHashMap<>();
+        HashMap<String, JsonArray> nextStop = new HashMap<>();
+        HashMap<String, JsonArray> prevStop = new HashMap<>();
+        Station head = null;
+        Station tail = null;
+
+        for (var stationEntry : lineArray) {
+            Station station = createStation(stationEntry);
+            stationLinkedHashMap.put(station.getName(), station);
+            nextStop.put(station.getName(), stationEntry.getAsJsonObject().get("next").getAsJsonArray());
+            prevStop.put(station.getName(), stationEntry.getAsJsonObject().get("prev").getAsJsonArray());
+            if (head == null) {
+                head = station;
+            }
+            tail = station;
+        }
+
+        nextStop.forEach((stationName, nextStops) -> {
+            LinkedList<Station> next = new LinkedList<>();
+            nextStops.forEach(name -> next.add(stationLinkedHashMap.get(name.getAsString())));
+            stationLinkedHashMap.get(stationName).setNext(next);
+        });
+
+        prevStop.forEach((stationName, prevStops) -> {
+            LinkedList<Station> prev = new LinkedList<>();
+            prevStops.forEach(name -> prev.add(stationLinkedHashMap.get(name.getAsString())));
+            stationLinkedHashMap.get(stationName).setPrev(prev);
+        });
+
+        metroLines.put(lineName, new MetroLine(lineName, head, tail, stationLinkedHashMap));
     }
 
     /**
@@ -133,24 +171,24 @@ public class FileOperations {
      * is as simple as the station number with a name only, or a whole JSON object itself with name, transfers, and time
      * between stations.
      *
-     * @param station
+     * @param stationElement
      *         JSON element of station to create
      *
      * @return Station object
      */
-    private static Station createStation(final JsonElement station) {
+    private static Station createStation(final JsonElement stationElement) {
         // the element is only a station number and station name; i.e. ("1": "Hammersmith")
-        if (!station.isJsonObject()) {
-            return new Station(station.getAsString(), lineName);
+        if (stationElement.isJsonPrimitive()) {
+            return new Station(stationElement.getAsString(), lineName);
         }
 
-        JsonObject stationDetails = station.getAsJsonObject();
+        JsonObject stationDetails = stationElement.getAsJsonObject();
         String     stationName    = stationDetails.get("name").getAsString();
-        addTransferStations(stationDetails.get("transfer"), stationName);
         JsonElement timeElement = stationDetails.has("time") ? stationDetails.get("time") : JsonNull.INSTANCE;
-
-        return timeElement.isJsonNull() ? new Station(stationName, lineName)
+        Station station = timeElement.isJsonNull() ? new Station(stationName, lineName)
                                         : new Station(stationName, lineName, timeElement.getAsInt());
+        addTransferStations(stationDetails.get("transfer"), station);
+        return station;
     }
 
     /**
@@ -159,36 +197,44 @@ public class FileOperations {
      *
      * @param transferElement
      *         JSON element holding the transfers
-     * @param stationName
-     *         name of the station we're processing transfers for
+     * @param station
+     *         the station we're processing transfers for
      */
-    private static void addTransferStations(final JsonElement transferElement, final String stationName) {
+    private static void addTransferStations(final JsonElement transferElement, final Station station) {
         // the element is null, nothing to process
         if (transferElement.isJsonNull()) {
             return;
         }
 
-        // the element is a single JSON element so add it to the transfers map
-        if (!transferElement.isJsonArray()) {
-            TRANSFERS.putIfAbsent(stationName,
-                          new ArrayList<>(List.of(lineName,
-                                                  transferElement.getAsJsonObject().get("line").getAsString())));
-            return;
+        HashMap<String, String> transferLineNames = new HashMap<>();
+
+        // the element is a single JSON object so add it to the transfers map
+        if (transferElement.isJsonObject()) {
+            transferLineNames.put(transferElement.getAsJsonObject().get("line").getAsString(),
+                                  transferElement.getAsJsonObject().get("station").getAsString());
         }
 
-        JsonArray transferArray = transferElement.getAsJsonArray();
+        if (transferElement.isJsonArray()) {
+            JsonArray transferArray = transferElement.getAsJsonArray();
 
-        // the array is empty, nothing to process
-        if (transferArray.isEmpty()) {
-            return;
+            // the array is empty, nothing to process
+            if (transferArray.isEmpty()) {
+                return;
+            }
+
+            // process all the elements in the array adding them to the transfers map
+            for (var transfer : transferArray) {
+                transferLineNames.put(transfer.getAsJsonObject().get("line").getAsString(),
+                                      transfer.getAsJsonObject().get("station").getAsString());
+            }
         }
 
-        // process all the elements in the array adding them to the transfers map
-        ArrayList<String> transferLines = new ArrayList<>();
-        transferLines.add(lineName);
-        for (var transfer : transferArray) {
-            transferLines.add(transfer.getAsJsonObject().get("line").getAsString());
+        // add any lines to the transfer map
+        var transferFromStation = TRANSFERS.get(station);
+        if (transferFromStation == null) {
+            TRANSFERS.put(station, new HashMap<>(transferLineNames));
+        } else {
+            transferFromStation.putAll(transferLineNames);
         }
-        TRANSFERS.putIfAbsent(stationName, transferLines);
     }
 }

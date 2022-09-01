@@ -41,7 +41,7 @@ public class Controller {
                     if (command.size() == 3 || command.size() == 4) {
                         var lineName = command.get(1);
                         var statName = command.get(2);
-                        var time = command.size() == 4 ? Integer.parseInt(command.get(3)) : 0;
+                        var time     = command.size() == 4 ? Integer.parseInt(command.get(3)) : 0;
                         if (isValidLineName(lineName)) {
                             if (command.get(0).equals("/append")) {
                                 metroLines.get(lineName).append(statName, time);
@@ -91,8 +91,9 @@ public class Controller {
                 // to find to command(3) and command(4), the ending line and station name (respectively)
                 case "/route" -> {
                     if (command.size() == 5) {
-                        printRoute(getRoute(command.get(1), command.get(2), command.get(3), command.get(4),
-                                            false).getFirst());
+                        Station start = metroLines.get(command.get(1)).getStation(command.get(2));
+                        Station end   = metroLines.get(command.get(3)).getStation(command.get(4));
+                        printRoute(getRoute(start, end, false).getFirst());
                     } else {
                         System.out.println("Invalid format! Command should be: " +
                                            "/route START_LINE START_STATION END_LINE END_STATION");
@@ -101,7 +102,9 @@ public class Controller {
 
                 case "/fastest-route" -> {
                     if (command.size() == 5) {
-                        var paths = getRoute(command.get(1), command.get(2), command.get(3), command.get(4), true);
+                        Station start = metroLines.get(command.get(1)).getStation(command.get(2));
+                        Station end   = metroLines.get(command.get(3)).getStation(command.get(4));
+                        var     paths = getRoute(start, end, true);
                         fastestRoute(paths);
                     } else {
                         System.out.println("Invalid format! Command should be: " +
@@ -134,23 +137,18 @@ public class Controller {
      * Takes two stations and attempts to find a route between them. If successful, returns a linked list containing all
      * the stations on the path. Otherwise, we return null indicating failure to find a route.
      *
-     * @param startLine
-     *         name of the line the start station is on
-     * @param startStation
-     *         name of the station to begin the search from
-     * @param destLine
-     *         name of the line the destination station is on
-     * @param destStation
-     *         name of the destination station
+     * @param start
+     *         Station object to start the search from
+     * @param end
+     *         Station object to begin the search from
+     * @param getAllPaths
+     *         flag for if we find all paths or just the first one
      *
      * @return a linked list containing all the stations on the route or null if we couldn't find a route
      */
-    LinkedList<LinkedList<Station>> getRoute(final String startLine, final String startStation,
-                                             final String destLine, final String destStation,
+    LinkedList<LinkedList<Station>> getRoute(final Station start, final Station end,
                                              final boolean getAllPaths) {
         LinkedList<LinkedList<Station>> paths = new LinkedList<>();
-        Station                         start = metroLines.get(startLine).getStation(startStation);
-        Station                         end   = metroLines.get(destLine).getStation(destStation);
 
         if (start != null && end != null) {
             LinkedList<LinkedList<Station>> queue   = new LinkedList<>();
@@ -198,7 +196,7 @@ public class Controller {
                     time += 5;  // add the transfer time
                     continue;   // and continue the loop
                 }
-                time += curr.getNext() == prev ? curr.getTime() : prev.getTime();
+                time += curr.getNext().contains(prev) ? curr.getTime() : prev.getTime();
             }
 
             if (time < shortestTime) {
@@ -220,7 +218,7 @@ public class Controller {
         Station previous = new Station("", route.getFirst().getLine());
         for (Station station : route) {
             if (!station.getLine().equals(previous.getLine())) {
-                System.out.println("Transition to line " + station.getLine());
+                System.out.println("Transfer to: " + station.getLine());
             }
             System.out.println(station.getName());
             previous = station;
@@ -229,6 +227,6 @@ public class Controller {
 
     void printFastestRoute(final LinkedList<Station> route, final int time) {
         printRoute(route);
-        System.out.printf("Total: %d minutes in the way%n", time);
+        System.out.printf("Total trip time: %d minutes.%n", time);
     }
 }
